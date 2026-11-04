@@ -1,22 +1,58 @@
-asyncapi: 3.0.0
+asyncapi: 2.6.0
 info:
-  title: Open Energy Reference Events
-  version: 0.1.0
+  title: Open Energy — Reference Energy Core Platform — Domain Events
+  version: 1.0.0
+  description: >
+    CloudEvents 1.0 envelopes published by the platform's bounded contexts.
+    Consumers MUST be idempotent and tolerate unknown fields. Ordering is
+    guaranteed only per aggregate (the CloudEvent `subject`).
+servers:
+  production:
+    url: kafka://broker.energy.svc.cluster.local:9092
+    protocol: kafka
+    description: Kafka-backed Knative Broker in production; Knative Broker abstraction elsewhere.
 channels:
-  domainEvents:
-    address: open-energy.domain-events.v1
-    messages:
-      domainEvent:
-        $ref: '#/components/messages/DomainEvent'
-operations:
-  receiveDomainEvent:
-    action: receive
-    channel:
-      $ref: '#/channels/domainEvents'
+  asset.created:
+    publish:
+      operationId: on-asset-created
+      message: { $ref: '#/components/messages/Generic' }
+  dispatch.created:
+    publish:
+      operationId: on-dispatch-created
+      message: { $ref: '#/components/messages/Generic' }
+  grid.created:
+    publish:
+      operationId: on-grid-created
+      message: { $ref: '#/components/messages/Generic' }
+  meter.created:
+    publish:
+      operationId: on-meter-created
+      message: { $ref: '#/components/messages/Generic' }
+  notification.created:
+    publish:
+      operationId: on-notification-created
+      message: { $ref: '#/components/messages/Generic' }
+  anomaly.evaluated:
+    publish:
+      operationId: on-anomaly-evaluated
+      message: { $ref: '#/components/messages/Generic' }
+  reliability.evaluated:
+    publish:
+      operationId: on-reliability-evaluated
+      message: { $ref: '#/components/messages/Generic' }
 components:
   messages:
-    DomainEvent:
-      name: MeterReadingReceived
-      contentType: application/cloudevents+json
-      payload:
-        $ref: './cloudevents/domain-event.schema.json'
+    Generic: { payload: { $ref: '#/components/schemas/CloudEvent' } }
+  schemas:
+    CloudEvent:
+      type: object
+      required: [specversion, id, source, type, time]
+      properties:
+        specversion: { type: string, enum: ['1.0'] }
+        id: { type: string, format: uuid }
+        source: { type: string, example: '/open-energy/service' }
+        type: { type: string, example: 'context.event' }
+        subject: { type: string, description: Aggregate id (ordering key). }
+        time: { type: string, format: date-time }
+        datacontenttype: { type: string, enum: [application/json] }
+        data: { type: object }
